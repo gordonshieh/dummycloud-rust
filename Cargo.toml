@@ -1,0 +1,6 @@
+[package]
+name = "dummycloud"
+version = "0.1.0"
+authors = ["Gordon Shieh <gordon.shieh94@gmail.com>"]
+
+[dependencies]
