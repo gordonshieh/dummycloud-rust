@@ -14,9 +14,11 @@ pub struct ResponsePayload {
     result: serde_json::Value,
 }
 
-pub fn parse_json(payload: &String) -> MessagePayload {
-    let payload: MessagePayload = serde_json::from_str(&payload).unwrap();
-    payload
+impl MessagePayload {
+    pub fn from_json(payload: &String) -> MessagePayload {
+        let payload: MessagePayload = serde_json::from_str(&payload).unwrap();
+        payload
+    }
 }
 
 impl ResponsePayload {

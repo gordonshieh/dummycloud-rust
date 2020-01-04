@@ -100,7 +100,7 @@ fn main() -> std::io::Result<()> {
             }
         };
 
-        let response = payload::parse_json(&response);
+        let response = payload::MessagePayload::from_json(&response);
         let reply_json: payload::ResponsePayload = match response.method.as_str() {
             "_otc.info" => {
                 println!("_otc.info");
