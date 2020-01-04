@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Debug)]
 pub struct MessagePayload {
     pub method: String,
-    partner_id: String,
+    partner_id: Option<String>,
     pub id: u32,
     pub params: serde_json::Value,
 }
