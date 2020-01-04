@@ -1,11 +1,4 @@
-extern crate bytes;
-extern crate crypto;
-extern crate serde;
-extern crate serde_json;
-
-use std::ascii::escape_default;
 use std::net::UdpSocket;
-use std::str;
 use std::time::SystemTime;
 
 use bytes::{Buf, BufMut, BytesMut};
@@ -14,39 +7,29 @@ use serde_json::json;
 mod codec;
 mod payload;
 
-fn show(bs: BytesMut) -> String {
-    let mut visible = String::new();
-    for &b in bs.bytes() {
-        let part: Vec<u8> = escape_default(b).collect();
-        visible.push_str(str::from_utf8(&part).unwrap());
-    }
-    visible
-}
-
-fn show_bytes(bs: &[u8]) -> String {
-    let mut visible = String::new();
-    for &b in bs {
-        let part: Vec<u8> = escape_default(b).collect();
-        visible.push_str(str::from_utf8(&part).unwrap());
-    }
-    visible
-}
-
 fn create_timesync_packet() -> BytesMut {
     let mut packet = BytesMut::with_capacity(32);
 
-    // set headers for sending timesync packet
+    // byte 0: set headers for sending timesync packet
     packet.put_u8(0x21);
     packet.put_u8(0x31);
+
+    // byte 2: size of the timestamp field
     packet.put_u8(0x00);
     packet.put_u8(0x20);
+
+    // byte 4 - 11: emptiness
     packet.put_slice(&[0xff; 8]);
 
     let epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
         .as_secs() as u32;
+
+    // byte 12-15: write the epoch timestamp, yes this will fail in 2038.
     packet.put_u32(epoch);
+
+    // fill the rest of the 32 byte packet with emptiness
     packet.put_slice(&[0xff; 16]);
     packet
 }
