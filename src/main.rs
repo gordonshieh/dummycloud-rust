@@ -1,7 +1,9 @@
+use std::env;
 use std::net::UdpSocket;
 use std::time::SystemTime;
 
 use bytes::{Buf, BufMut, BytesMut};
+use getopts::Options;
 use serde_json::json;
 
 mod codec;
@@ -34,7 +36,39 @@ fn create_timesync_packet() -> BytesMut {
     packet
 }
 
+fn print_usage(program: &str, opts: Options) {
+    let brief = format!("Usage: {} abcdef [options]", program);
+    print!("{}", opts.usage(&brief));
+}
+
 fn main() -> std::io::Result<()> {
+    let args: Vec<String> = env::args().collect();
+
+    let mut opts = Options::new();
+    opts.opt(
+        "k",
+        "key",
+        "Cloud key used to identify your robot to Xiaomi.",
+        "SoMeALPhaCHars",
+        getopts::HasArg::Yes,
+        getopts::Occur::Req,
+    );
+
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(_) => {
+            print_usage(&args[0].clone(), opts);
+            std::process::exit(1);
+        }
+    };
+    let cloud_key = match matches.opt_str("k") {
+        Some(s) => s,
+        None => {
+            print_usage(&args[0].clone(), opts);
+            std::process::exit(1);
+        }
+    };
+
     let socket = UdpSocket::bind("0.0.0.0:8053").expect("Could not bind to address");
     println!("Dummycloud is now listening");
 
@@ -43,7 +77,6 @@ fn main() -> std::io::Result<()> {
         let (amt, src) = socket.recv_from(&mut buf)?;
         println!("connected from: {} with a message of length: {}", src, amt);
 
-        let cloud_key = "replace me with cli params";
         let c = codec::UDPCodec::new(&cloud_key);
 
         // truncate the size of the buffer to appropriately handle later
