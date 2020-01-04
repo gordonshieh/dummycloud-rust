@@ -85,7 +85,6 @@ fn main() -> std::io::Result<()> {
         let header = &buf[..32];
         let encrypted_body = &buf[32..];
         let stamp = (&header[12..]).get_u32();
-        println!("stamp: {}", stamp);
         let device_id = (&header[8..]).get_u32();
         let response = match c.decode_response(header, encrypted_body) {
             Some(s) => s,
@@ -102,29 +101,25 @@ fn main() -> std::io::Result<()> {
 
         let response = payload::MessagePayload::from_json(&response);
         let reply_json: payload::ResponsePayload = match response.method.as_str() {
-            "_otc.info" => {
-                println!("_otc.info");
-
-                payload::ResponsePayload::new(
-                    response.id,
-                    json!({
-                        "otc_list": [{
+            "_otc.info" => payload::ResponsePayload::new(
+                response.id,
+                json!({
+                    "otc_list": [{
+                        "ip": "130.83.47.181",
+                        "port": 8053
+                    }
+                    ],
+                    "otc_test": {
+                        "list": [{
                             "ip": "130.83.47.181",
                             "port": 8053
                         }
                         ],
-                        "otc_test": {
-                            "list": [{
-                                "ip": "130.83.47.181",
-                                "port": 8053
-                            }
-                            ],
-                            "interval": 1800,
-                            "firsttest": 1193
-                        }
-                    }),
-                )
-            }
+                        "interval": 1800,
+                        "firsttest": 1193
+                    }
+                }),
+            ),
             _ => payload::ResponsePayload::new(response.id, serde_json::to_value("ok")?),
         };
         let reply = c.encode_response(&serde_json::to_vec(&reply_json)?, device_id);
