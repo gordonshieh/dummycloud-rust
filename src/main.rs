@@ -99,8 +99,12 @@ fn main() -> std::io::Result<()> {
             }
         };
 
-        let response = payload::MessagePayload::from_json(&response);
-        let reply_json: payload::ResponsePayload = match response.method.as_str() {
+        let response: payload::MessagePayload = match serde_json::from_str(&response) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        let response_function = response.method.as_str();
+        let reply_json: payload::ResponsePayload = match response_function {
             "_otc.info" => payload::ResponsePayload::new(
                 response.id,
                 json!({
@@ -120,7 +124,33 @@ fn main() -> std::io::Result<()> {
                     }
                 }),
             ),
-            _ => payload::ResponsePayload::new(response.id, serde_json::to_value("ok")?),
+            "props" | "event.status" | "event.low_power_back" => {
+                payload::ResponsePayload::new(response.id, serde_json::to_value("ok")?)
+            }
+            "_sync.gen_presigned_url" => payload::ResponsePayload::new(
+                response.id,
+                json!({"" : { "url": "http://us.ott.io.mi.com/robomap", "obj_name": "something", "method": "PUT",
+                     "expires_time": (SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() + 3600),
+                        "ok": true,
+                        "pwd": "password"
+                }}),
+            ),
+            "_sync.batch_gen_room_up_url" => payload::ResponsePayload::new(
+                response.id,
+                json!([
+                    "http://us.ott.io.mi.com/robomap/1",
+                    "http://us.ott.io.mi.com/robomap/2",
+                    "http://us.ott.io.mi.com/robomap/3",
+                    "http://us.ott.io.mi.com/robomap/4"
+                ]),
+            ),
+            _ => {
+                println!("unknown event: {}", response_function);
+                continue;
+            }
         };
         let reply = c.encode_response(&serde_json::to_vec(&reply_json)?, device_id);
         socket.send_to(&reply, &src)?;
